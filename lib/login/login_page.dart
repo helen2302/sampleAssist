@@ -1,10 +1,13 @@
+import 'dart:convert';
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:gap/gap.dart';
-import 'package:sample_assist/collect_registration/collect_registration.dart';
-import 'package:sample_assist/register/register_page.dart';
-import '../gen/assets.gen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:sample_assist/collect_registration/collect_registration.dart';
+import '../gen/assets.gen.dart';
+import '../register/register_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -16,29 +19,73 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _email = TextEditingController();
   final TextEditingController _password = TextEditingController();
-  final _formkey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
 
-  bool _isPasswordVisible = false; // State variable for password visibility
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(); // Secure storage instance
 
-  void _login() {
-    if (_formkey.currentState?.validate() != true) {
-      return;
-    } else {
-      showDialog(
-        context: context,
-        builder: (context) => const AlertDialog(
-          title: Text("Success!"),
-          content: Text("Log In Success!"),
-        ),
+  bool _isPasswordVisible = false;
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    const String apiUrl = "http://127.0.0.1:8000/login";
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "email": _email.text,
+          "password": _password.text,
+        }),
       );
-      Future.delayed(const Duration(seconds: 2), () {
-        if (!mounted) return;
-        Navigator.of(context).pop(); // Dismiss the dialog
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (context) => const CollectRegistration(),
-        ));
-      });
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        // Store the access token securely
+        await _storage.write(key: 'accessToken', value: data['access_token']);
+        final decodedPayload = utf8.decode(
+            base64Url.decode(base64Url.normalize(data['access_token'].split('.')[1])));
+        await _storage.write(key: 'accessTokenPayload', value: decodedPayload);
+
+        // Navigate to CollectRegistration on success
+        showDialog(
+          context: context,
+          builder: (context) => const AlertDialog(
+            title: Text("Success!"),
+            content: Text("Log In Successful!"),
+          ),
+        );
+
+        Future.delayed(const Duration(seconds: 1), () {
+          Navigator.of(context).pop();
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (context) => const CollectRegistration(),
+          ));
+        });
+      } else {
+        _showErrorDialog("Invalid email or password.");
+      }
+    } catch (error) {
+      _showErrorDialog("An error occurred: $error");
     }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Error"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -46,7 +93,7 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       body: SingleChildScrollView(
         child: Form(
-          key: _formkey,
+          key: _formKey,
           child: Container(
             width: MediaQuery.of(context).size.width,
             height: MediaQuery.of(context).size.height,

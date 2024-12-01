@@ -1,7 +1,9 @@
-import 'package:email_validator/email_validator.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:email_validator/email_validator.dart';
+import 'package:http/http.dart' as http;
 
 import '../gen/assets.gen.dart';
 
@@ -18,23 +20,6 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _confirmPassword = TextEditingController();
   final _formkey = GlobalKey<FormState>();
 
-  void _signup() {
-    if (_formkey.currentState?.validate() != true) {
-      return;
-    } else {
-      showDialog(
-          context: context,
-          builder: (context) => const AlertDialog(
-            title: Text("Success!"),
-            content: Text("Sign Up Success!"),
-          ));
-      Future.delayed(const Duration(seconds: 1), () {
-        Navigator.of(context).pop();
-        Navigator.of(context).pop();
-      });
-    }
-  }
-
   bool _obscuredPassword = true;
   bool _obscuredConfirmPassword = true;
 
@@ -50,13 +35,63 @@ class _RegisterPageState extends State<RegisterPage> {
     });
   }
 
+  Future<void> _signup() async {
+    if (_formkey.currentState?.validate() != true) {
+      return;
+    }
+
+    final String email = _email.text.trim();
+    final String password = _password.text.trim();
+
+    try {
+      // API call using http
+      final http.Response response = await http.post(
+        Uri.parse('http://127.0.0.1:8000/signup'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Success!"),
+            content: Text(data['message'] ?? 'Sign Up Successful!'),
+          ),
+        );
+        Future.delayed(const Duration(seconds: 1), () {
+          Navigator.of(context).pop(); // Close success dialog
+          Navigator.of(context).pop(); // Return to the previous screen
+        });
+      } else {
+        final data = jsonDecode(response.body);
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Error!"),
+            content: Text(data['error'] ?? 'Sign Up Failed!'),
+          ),
+        );
+      }
+    } catch (e) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text("Error!"),
+          content: const Text("Failed to connect to the server. Please try again."),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1448), // Background color for the AppBar
+        backgroundColor: const Color(0xFF1A1448),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white), // White back arrow
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
             Navigator.of(context).pop();
           },
@@ -110,16 +145,13 @@ class _RegisterPageState extends State<RegisterPage> {
                                 fontSize: 16,
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Color(0xFF1A1448), width: 1.5),
+                                borderSide: BorderSide(color: Color(0xFF1A1448), width: 1.5),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Color(0xFF01B4D2), width: 1.5),
+                                borderSide: BorderSide(color: Color(0xFF01B4D2), width: 1.5),
                               ),
                               border: OutlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Color(0xFF1A1448), width: 1.5),
+                                borderSide: BorderSide(color: Color(0xFF1A1448), width: 1.5),
                               ),
                             ),
                             validator: (text) {
@@ -156,16 +188,13 @@ class _RegisterPageState extends State<RegisterPage> {
                                 fontSize: 16,
                               ),
                               enabledBorder: const OutlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Color(0xFF1A1448), width: 1.5),
+                                borderSide: BorderSide(color: Color(0xFF1A1448), width: 1.5),
                               ),
                               focusedBorder: const OutlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Color(0xFF01B4D2), width: 1.5),
+                                borderSide: BorderSide(color: Color(0xFF01B4D2), width: 1.5),
                               ),
                               border: const OutlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Color(0xFF1A1448), width: 1.5),
+                                borderSide: BorderSide(color: Color(0xFF1A1448), width: 1.5),
                               ),
                             ),
                             validator: (text) {
@@ -201,16 +230,13 @@ class _RegisterPageState extends State<RegisterPage> {
                                 fontSize: 16,
                               ),
                               enabledBorder: const OutlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Color(0xFF1A1448), width: 1.5),
+                                borderSide: BorderSide(color: Color(0xFF1A1448), width: 1.5),
                               ),
                               focusedBorder: const OutlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Color(0xFF01B4D2), width: 1.5),
+                                borderSide: BorderSide(color: Color(0xFF01B4D2), width: 1.5),
                               ),
                               border: const OutlineInputBorder(
-                                borderSide:
-                                BorderSide(color: Color(0xFF1A1448), width: 1.5),
+                                borderSide: BorderSide(color: Color(0xFF1A1448), width: 1.5),
                               ),
                             ),
                             validator: (text) {

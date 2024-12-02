@@ -193,68 +193,7 @@ class _CollectRegistrationState extends State<CollectRegistration> {
     );
   }
 
-  // Helper to build photo ID section
-  Widget _buildPhotoIdSection() {
-    return Center(
-      child: Column(
-        children: [
-          const SizedBox(height: 16),
-          Container(
-            height: 300,
-            width: MediaQuery.of(context).size.width,
-            padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 8.0),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: _uploadedPhoto != null
-                ? ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.file(
-                _uploadedPhoto!,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-              ),
-            )
-                : Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  'Please upload your current Photo ID',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Color(0xFF156CC9),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: () {
-                    _showPhotoIdOptions(context); // Call the method to display menu
-                  },
-                  child: Container(
-                    height: 70,
-                    width: 70,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF156CC9),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      size: 30,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-// Method to show the menu
+  // Updated method to show photo ID options
   void _showPhotoIdOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -268,7 +207,7 @@ class _CollectRegistrationState extends State<CollectRegistration> {
             const Padding(
               padding: EdgeInsets.all(14.0),
               child: Text(
-                'PHOTO ID',
+                'PHOTO ID OPTIONS',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -277,6 +216,24 @@ class _CollectRegistrationState extends State<CollectRegistration> {
               ),
             ),
             const Divider(height: 1), // Divider below the title
+
+            // Watch Photo option
+            if (_uploadedPhoto != null) ...[
+              ListTile(
+                leading: const Icon(Icons.visibility, color: Color(0xFF156CC9)),
+                title: const Text(
+                  'Watch Photo',
+                  style: TextStyle(fontSize: 16, color: Color(0xFF156CC9)),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showFullPhotoDialog(); // Show full photo in a dialog
+                },
+              ),
+              const Divider(height: 1),
+            ],
+
+            // Take Photo option
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Color(0xFF156CC9)),
               title: const Text(
@@ -288,7 +245,9 @@ class _CollectRegistrationState extends State<CollectRegistration> {
                 Navigator.pop(context);
               },
             ),
-            const Divider(height: 1), // Divider between Photo and Upload
+            const Divider(height: 1),
+
+            // Upload Photo option
             ListTile(
               leading: const Icon(Icons.upload, color: Color(0xFF156CC9)),
               title: const Text(
@@ -296,24 +255,31 @@ class _CollectRegistrationState extends State<CollectRegistration> {
                 style: TextStyle(fontSize: 16, color: Color(0xFF156CC9)),
               ),
               onTap: () {
-                // Handle "Upload" action
-                _getPhotoFromGallery();
+                _getPhotoFromGallery(); // Handle "Upload" action
                 Navigator.pop(context);
               },
             ),
-            const Divider(height: 1), // Divider between Upload and Delete
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.grey),
-              title: const Text(
-                'Delete',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+            const Divider(height: 1),
+
+            // Delete Photo option
+            if (_uploadedPhoto != null) ...[
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.grey),
+                title: const Text(
+                  'Delete',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+                onTap: () {
+                  setState(() {
+                    _uploadedPhoto = null; // Remove the uploaded photo
+                  });
+                  Navigator.pop(context);
+                },
               ),
-              onTap: () {
-                // Handle "Delete" action
-                Navigator.pop(context);
-              },
-            ),
-            const Divider(height: 1), // Divider above Close
+              const Divider(height: 1),
+            ],
+
+            // Close option
             ListTile(
               title: const Center(
                 child: Text(
@@ -328,6 +294,94 @@ class _CollectRegistrationState extends State<CollectRegistration> {
           ],
         );
       },
+    );
+  }
+
+// Helper method to display the full photo in a dialog
+  void _showFullPhotoDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.file(
+                _uploadedPhoto!,
+                fit: BoxFit.cover,
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Close',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+// Updated Photo ID section to handle tap
+  Widget _buildPhotoIdSection() {
+    return Center(
+      child: GestureDetector(
+        onTap: () {
+          _showPhotoIdOptions(context); // Call the method to display menu
+        },
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            Container(
+              height: 300,
+              width: MediaQuery.of(context).size.width,
+              padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 8.0),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: _uploadedPhoto != null
+                  ? ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  _uploadedPhoto!,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
+              )
+                  : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Please upload your current Photo ID',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Color(0xFF156CC9),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    height: 70,
+                    width: 70,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF156CC9),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      size: 30,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

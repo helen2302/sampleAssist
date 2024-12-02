@@ -1,11 +1,8 @@
-import 'dart:convert';
 import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
-import 'package:sample_assist/collect_registration/collect_registration.dart';
+import '../collect_registration/collect_registration.dart';
 import '../gen/assets.gen.dart';
 import '../register/register_page.dart';
 
@@ -21,71 +18,26 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _password = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  final FlutterSecureStorage _storage = const FlutterSecureStorage(); // Secure storage instance
-
   bool _isPasswordVisible = false;
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
-    const String apiUrl = "http://127.0.0.1:8000/login";
-
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          "email": _email.text,
-          "password": _password.text,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
-        // Store the access token securely
-        await _storage.write(key: 'accessToken', value: data['access_token']);
-        final decodedPayload = utf8.decode(
-            base64Url.decode(base64Url.normalize(data['access_token'].split('.')[1])));
-        await _storage.write(key: 'accessTokenPayload', value: decodedPayload);
-
-        // Navigate to CollectRegistration on success
-        showDialog(
-          context: context,
-          builder: (context) => const AlertDialog(
-            title: Text("Success!"),
-            content: Text("Log In Successful!"),
-          ),
-        );
-
-        Future.delayed(const Duration(seconds: 1), () {
-          Navigator.of(context).pop();
-          Navigator.of(context).push(MaterialPageRoute(
-            builder: (context) => const CollectRegistration(),
-          ));
-        });
-      } else {
-        _showErrorDialog("Invalid email or password.");
-      }
-    } catch (error) {
-      _showErrorDialog("An error occurred: $error");
-    }
-  }
-
-  void _showErrorDialog(String message) {
+    // Simulate a successful login operation (replace with actual API call when ready)
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Error"),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text("OK"),
-          ),
-        ],
+      builder: (context) => const AlertDialog(
+        title: Text("Success!"),
+        content: Text("Log In Successful!"),
       ),
     );
+
+    Future.delayed(const Duration(seconds: 1), () {
+      Navigator.of(context).pop(); // Close success dialog
+      Navigator.of(context).push(MaterialPageRoute(
+        builder: (context) => const CollectRegistration(), // Replace with your desired next page
+      ));
+    });
   }
 
   @override
@@ -169,7 +121,7 @@ class _LoginPageState extends State<LoginPage> {
                           const Gap(15),
                           TextFormField(
                             controller: _password,
-                            obscureText: !_isPasswordVisible, // Toggle password visibility
+                            obscureText: !_isPasswordVisible,
                             style: const TextStyle(
                               color: Color(0xFF1A1448),
                               fontSize: 16,
@@ -211,31 +163,6 @@ class _LoginPageState extends State<LoginPage> {
                                 return 'Invalid Password!';
                               }
                             },
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              const Spacer(),
-                              TextButton.icon(
-                                onPressed: () {
-                                  // Add forgot password logic here
-                                },
-                                label: const Text(
-                                  "Forgot Password?",
-                                  style: TextStyle(
-                                    color: Color(0xFF1A1448),
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: Color(0xFF1A1448),
-                                    decorationThickness: 1.5,
-                                  ),
-                                ),
-                                style: TextButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: const Size(0, 0),
-                                ),
-                                icon: const Icon(Icons.lock_outline, color: Color(0xFF1A1448), size: 18),
-                              ),
-                            ],
                           ),
                           const Gap(7),
                           ElevatedButton(

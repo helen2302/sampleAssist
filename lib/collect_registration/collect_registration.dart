@@ -1,159 +1,40 @@
+import 'dart:convert';
 import 'dart:io';
-
+import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sample_assist/collect_registration/camera_with_frame.dart';
+import 'widgets/step_indicator.dart';
+import 'widgets/section_title.dart';
+import 'widgets/photo_id_section.dart';
+import 'widgets/dropdown_field.dart';
+import 'widgets/custom_text_field.dart';
+import 'widgets/action_buttons.dart';
+import 'widgets/section_header.dart';
+import 'package:http/http.dart' as http;
 
 class CollectRegistration extends StatefulWidget {
   const CollectRegistration({super.key});
 
   @override
-  State<CollectRegistration> createState() => _CollectRegistrationState();
+  State<CollectRegistration> createState() => _CollectRegistrationScreenState();
 }
 
-class _CollectRegistrationState extends State<CollectRegistration> {
+class _CollectRegistrationScreenState extends State<CollectRegistration> {
   final _formKey = GlobalKey<FormState>();
   String? selectedPhotoIDType;
   final ImagePicker _imagePicker = ImagePicker();
   File? _uploadedPhoto;
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Collector Registration',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: const Color(0xFF01B4D2),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-
-            // Step Indicator
-            _buildStepIndicator(),
-
-            const SizedBox(height: 16),
-
-            // Collector Identity Section Title
-            _buildSectionTitle('1. Collector Identity'),
-
-            const SizedBox(height: 16),
-
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'PHOTO ID',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-
-                    // Photo ID Section
-                    _buildPhotoIdSection(),
-
-                    const SizedBox(height: 8),
-
-                    // Photo ID Dropdown
-                    _buildDropdownField(
-                      'Please select a type of Photo ID',
-                      ['Passport', 'Driver\'s License', 'National ID'],
-                    ),
-
-                    // Document Number & Expiry Date
-                    _buildTextField('Photo ID Document Number'),
-                    _buildTextField('Nationality'),
-                    _buildTextField('Expiry Date'),
-
-                    const SizedBox(height: 16),
-
-                    // Personal Details Section
-                    _buildSectionHeader('PERSONAL DETAILS'),
-                    _buildTextField('First Name'),
-                    _buildTextField('Last Name'),
-                    _buildTextField('Sex'),
-                    _buildTextField('Date of Birth'),
-
-                    // Contact Information Section
-                    const SizedBox(height: 16),
-                    _buildSectionHeader('CONTACT INFORMATION'),
-                    _buildTextField('Mobile Number'),
-                    _buildTextField('Phone Number (Optional)'),
-                    _buildTextField('Email Address'),
-
-                    // Address Section
-                    const SizedBox(height: 16),
-                    _buildSectionHeader('ADDRESS'),
-                    _buildTextField('Address Line 1 (Street address)'),
-                    _buildTextField('Address Line 2 (Optional)'),
-                    _buildTextField('City / Suburb'),
-                    _buildTextField('State'),
-                    _buildTextField('Postcode'),
-                    _buildTextField('Country'),
-
-                    // Confirm Buttons
-                    const SizedBox(height: 16),
-                    _buildActionButtons(),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Helper to build step indicator
-  Widget _buildStepIndicator() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(5, (index) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 12,
-              backgroundColor:
-              index == 0 ? const Color(0xFF156CC9) : Colors.grey.shade300,
-              child: Text(
-                '${index + 1}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: index == 0 ? Colors.white : Colors.grey.shade600,
-                ),
-              ),
-            ),
-            if (index != 4)
-              Container(
-                width: 40, // Line width
-                height: 2,
-                color: Colors.grey.shade300,
-              ),
-          ],
-        );
-      }),
-    );
-  }
+  // Method to get a photo from the gallery
   void _getPhotoFromGallery() async {
     try {
       final XFile? pickedFile =
-      await _imagePicker.pickImage(source: ImageSource.gallery);
-
+          await _imagePicker.pickImage(source: ImageSource.gallery);
       if (pickedFile != null) {
         setState(() {
-          _uploadedPhoto = File(pickedFile.path); // Update the photo
+          _uploadedPhoto = File(pickedFile.path);
         });
       }
     } catch (e) {
@@ -161,144 +42,40 @@ class _CollectRegistrationState extends State<CollectRegistration> {
     }
   }
 
-  // Function to capture a photo from the camera
+  // Method to take a photo using the camera
   void _takePhoto() async {
-    try {
-      final XFile? pickedFile = await _imagePicker.pickImage(source: ImageSource.camera);
+    final cameras = await availableCameras();
+    CameraController controller =
+        CameraController(cameras.first, ResolutionPreset.high);
+    Future<void> initializeControllerFuture = controller.initialize();
 
+    try {
+      final XFile? pickedFile = await Navigator.push(
+        // ignore: use_build_context_synchronously
+        context,
+        MaterialPageRoute(
+          builder: (context) => CameraWithFrame(
+            controller: controller,
+            initializeControllerFuture: initializeControllerFuture,
+          ),
+        ),
+      );
       if (pickedFile != null) {
         setState(() {
-          _uploadedPhoto = File(pickedFile.path); // Update the photo
+          _uploadedPhoto = File(pickedFile.path);
         });
       }
     } catch (e) {
-      print('Error capturing photo: $e');
+      if (kDebugMode) {
+        print('Error capturing photo: $e');
+      }
     }
   }
 
-  // Helper to build section title
-  Widget _buildSectionTitle(String title) {
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      color: const Color(0xFF7F8E9D),
-      padding: const EdgeInsets.all(16.0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-
-  // Updated method to show photo ID options
-  void _showPhotoIdOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (BuildContext context) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(14.0),
-              child: Text(
-                'PHOTO ID OPTIONS',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-            ),
-            const Divider(height: 1), // Divider below the title
-
-            // Watch Photo option
-            if (_uploadedPhoto != null) ...[
-              ListTile(
-                leading: const Icon(Icons.visibility, color: Color(0xFF156CC9)),
-                title: const Text(
-                  'Watch Photo',
-                  style: TextStyle(fontSize: 16, color: Color(0xFF156CC9)),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showFullPhotoDialog(); // Show full photo in a dialog
-                },
-              ),
-              const Divider(height: 1),
-            ],
-
-            // Take Photo option
-            ListTile(
-              leading: const Icon(Icons.camera_alt, color: Color(0xFF156CC9)),
-              title: const Text(
-                'Take Photo',
-                style: TextStyle(fontSize: 16, color: Color(0xFF156CC9)),
-              ),
-              onTap: () {
-                _takePhoto(); // Call the take photo function
-                Navigator.pop(context);
-              },
-            ),
-            const Divider(height: 1),
-
-            // Upload Photo option
-            ListTile(
-              leading: const Icon(Icons.upload, color: Color(0xFF156CC9)),
-              title: const Text(
-                'Upload',
-                style: TextStyle(fontSize: 16, color: Color(0xFF156CC9)),
-              ),
-              onTap: () {
-                _getPhotoFromGallery(); // Handle "Upload" action
-                Navigator.pop(context);
-              },
-            ),
-            const Divider(height: 1),
-
-            // Delete Photo option
-            if (_uploadedPhoto != null) ...[
-              ListTile(
-                leading: const Icon(Icons.delete, color: Colors.grey),
-                title: const Text(
-                  'Delete',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-                onTap: () {
-                  setState(() {
-                    _uploadedPhoto = null; // Remove the uploaded photo
-                  });
-                  Navigator.pop(context);
-                },
-              ),
-              const Divider(height: 1),
-            ],
-
-            // Close option
-            ListTile(
-              title: const Center(
-                child: Text(
-                  'Close',
-                  style: TextStyle(fontSize: 16, color: Colors.red),
-                ),
-              ),
-              onTap: () {
-                Navigator.pop(context); // Close the bottom sheet
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-// Helper method to display the full photo in a dialog
+  // Method to show the full photo in a dialog
   void _showFullPhotoDialog() {
+    if (_uploadedPhoto == null) return; // Ensure there is a photo to display
+
     showDialog(
       context: context,
       builder: (context) {
@@ -311,7 +88,7 @@ class _CollectRegistrationState extends State<CollectRegistration> {
                 fit: BoxFit.cover,
               ),
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(context), // Close the dialog
                 child: const Text(
                   'Close',
                   style: TextStyle(color: Colors.red),
@@ -324,59 +101,92 @@ class _CollectRegistrationState extends State<CollectRegistration> {
     );
   }
 
-// Updated Photo ID section to handle tap
-  Widget _buildPhotoIdSection() {
-    return Center(
-      child: GestureDetector(
-        onTap: () {
-          _showPhotoIdOptions(context); // Call the method to display menu
-        },
+  void _deletePhoto() {
+    // Delete the photo and update the state
+    setState(() {
+      _uploadedPhoto = null;
+    });
+    print("Photo deleted");
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Collector Registration',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: const Color(0xFF01B4D2),
+      ),
+      body: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 16),
-            Container(
-              height: 300,
-              width: MediaQuery.of(context).size.width,
-              padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 8.0),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: _uploadedPhoto != null
-                  ? ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.file(
-                  _uploadedPhoto!,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
+            const StepIndicator(),
+            const SizedBox(height: 16),
+            const SectionTitle(title: '1. Collector Identity'),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SectionHeader(title: 'PHOTO ID'),
+                    const SizedBox(height: 16),
+                    DropdownField(
+                      hint: 'Please select a type of Photo ID',
+                      items: ['Passport', 'Driver\'s License', 'National ID'],
+                      value:
+                          selectedPhotoIDType, // Pass the current state value
+                      onChanged: (value) {
+                        setState(() {
+                          selectedPhotoIDType =
+                              value; // Update state on selection
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    PhotoIdSection(
+                      uploadedPhoto: _uploadedPhoto,
+                      getPhotoFromGallery: _getPhotoFromGallery,
+                      takePhoto: _takePhoto,
+                      watchPhoto: _showFullPhotoDialog,
+                      deletePhoto:
+                          _deletePhoto, // Provide the watch photo callback
+                    ),
+                    const CustomTextField(label: 'Photo ID Document Number'),
+                    const CustomTextField(label: 'Nationality'),
+                    const CustomTextField(label: 'Expiry Date'),
+                    const CustomTextField(label: 'Card Number'),
+                    const SizedBox(height: 16),
+                    const SectionHeader(title: 'PERSONAL DETAILS'),
+                    const CustomTextField(label: 'First Name'),
+                    const CustomTextField(label: 'Last Name'),
+                    const CustomTextField(label: 'Sex'),
+                    const CustomTextField(label: 'Date of Birth'),
+                    const SizedBox(height: 16),
+                    const SectionHeader(title: 'CONTACT INFORMATION'),
+                    const CustomTextField(label: 'Mobile Number'),
+                    const CustomTextField(label: 'Phone Number (Optional)'),
+                    const SizedBox(height: 16),
+                    const SectionHeader(title: 'ADDRESS'),
+                    const CustomTextField(label: 'Address'),
+                    const SizedBox(height: 16),
+                    ActionButtons(
+                      formKey: _formKey,
+                      onConfirm: () {
+                        if (_formKey.currentState!.validate()) {
+                          // Perform confirm action
+                          print("Form submitted successfully");
+                        }
+                      },
+                    ),
+                  ],
                 ),
-              )
-                  : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Please upload your current Photo ID',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Color(0xFF156CC9),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    height: 70,
-                    width: 70,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF156CC9),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      size: 30,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
               ),
             ),
           ],
@@ -384,142 +194,303 @@ class _CollectRegistrationState extends State<CollectRegistration> {
       ),
     );
   }
-
-
-  Widget _buildDropdownField(String hint, List<String> items) {
-    return DropdownButtonHideUnderline(
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade400, width: 1.5),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: DropdownButton<String>(
-          isExpanded: true,
-          value: selectedPhotoIDType,
-          hint: Text(
-            hint,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          items: items.map((String value) {
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Text(
-                value,
-                style: const TextStyle(fontSize: 16, color: Colors.black),
-              ),
-            );
-          }).toList(),
-          onChanged: (String? newValue) {
-            setState(() {
-              selectedPhotoIDType = newValue;
-            });
-          },
-          icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
-        ),
-      ),
-    );
-  }
-
-
-
-
-  // Helper to build section headers
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: 18,
-      ),
-    );
-  }
-
-  Widget _buildTextField(String label) {
-    return Column(
-      children: [
-        const SizedBox(height: 8),
-        TextFormField(
-          decoration: InputDecoration(
-            labelText: label,
-            labelStyle: TextStyle(fontSize: 16, color: Colors.grey.shade700),
-            floatingLabelStyle: TextStyle(
-              color: Colors.grey.shade700, // Same color as focused border
-              fontWeight: FontWeight.bold, // Optional: to highlight focus
-            ),
-            border: const OutlineInputBorder(),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: Colors.grey.shade400, // Custom border color when focused
-                width: 1.5,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(
-                color: Colors.grey.shade400, // Default border color when not focused
-                width: 1.5,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-
-  Widget _buildActionButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF01B4D2), // Background color
-            foregroundColor: Colors.white, // Text color
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30), // Optional for rounded corners
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          ),
-          onPressed: () {
-            // Save and Close action
-          },
-          child: const Text('Save and Close',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1A1448), // Background color
-            foregroundColor: Colors.white, // Text color
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30), // Optional for rounded corners
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          ),
-          onPressed: () {
-            if (_formKey.currentState!.validate()) {
-              // Confirm action
-            }
-          },
-          child: const Text('Confirm',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
 }
+
+//
+// import 'dart:convert';
+// import 'dart:io';
+// import 'package:flutter/material.dart';
+// import 'package:image_picker/image_picker.dart';
+// import 'package:http/http.dart' as http;
+//
+// class CollectRegistration extends StatefulWidget {
+//   const CollectRegistration({super.key});
+//
+//   @override
+//   State<CollectRegistration> createState() => _CollectRegistrationScreenState();
+// }
+//
+// class _CollectRegistrationScreenState extends State<CollectRegistration> {
+//   final _formKey = GlobalKey<FormState>();
+//   String? selectedPhotoIDType;
+//   final ImagePicker _imagePicker = ImagePicker();
+//   File? _uploadedPhoto;
+//
+//   // Controllers for autofill
+//   final TextEditingController firstNameController = TextEditingController();
+//   final TextEditingController lastNameController = TextEditingController();
+//   final TextEditingController addressController = TextEditingController();
+//   final TextEditingController licenseNumberController = TextEditingController();
+//   final TextEditingController cardNumberController = TextEditingController();
+//   final TextEditingController dateOfBirthController = TextEditingController();
+//   final TextEditingController expiryDateController = TextEditingController();
+//
+//   // Method to get a photo from the gallery
+//   void _getPhotoFromGallery() async {
+//     try {
+//       final XFile? pickedFile = await _imagePicker.pickImage(source: ImageSource.gallery);
+//       if (pickedFile != null) {
+//         setState(() {
+//           _uploadedPhoto = File(pickedFile.path);
+//         });
+//
+//         // If "Driver's License" is selected, send the image to the API
+//         if (selectedPhotoIDType == "Driver's License") {
+//           _sendPhotoToApi(_uploadedPhoto!);
+//         }
+//       }
+//     } catch (e) {
+//       print('Error selecting photo: $e');
+//     }
+//   }
+//
+//   // Method to take a photo using the camera
+//   void _takePhoto() async {
+//     try {
+//       final XFile? pickedFile = await _imagePicker.pickImage(source: ImageSource.camera);
+//       if (pickedFile != null) {
+//         setState(() {
+//           _uploadedPhoto = File(pickedFile.path);
+//         });
+//
+//         // If "Driver's License" is selected, send the image to the API
+//         if (selectedPhotoIDType == "Driver's License") {
+//           _sendPhotoToApi(_uploadedPhoto!);
+//         }
+//       }
+//     } catch (e) {
+//       print('Error capturing photo: $e');
+//     }
+//   }
+//
+//   void _deletePhoto() {
+//     // Delete the photo and update the state
+//     setState(() {
+//       _uploadedPhoto = null;
+//     });
+//     print("Photo deleted");
+//   }
+//
+//   // Method to send the photo to the API
+//   Future<void> _sendPhotoToApi(File photo) async {
+//     const String apiUrl = "http://34.55.218.37:9090/process_driver_license/";
+//
+//     try {
+//       final request = http.MultipartRequest('POST', Uri.parse(apiUrl));
+//       request.files.add(await http.MultipartFile.fromPath('file', photo.path));
+//
+//       final response = await request.send();
+//       final responseBody = await response.stream.bytesToString();
+//
+//       print('Response status: ${response.statusCode}');
+//       print('Response body: $responseBody');
+//
+//       if (response.statusCode == 200) {
+//         final data = jsonDecode(responseBody);
+//
+//         // Safely access nested fields from 'extracted_data'
+//         final extractedData = data['extracted_data'] ?? {};
+//         final String firstName = extractedData['first_name'] ?? 'N/A';
+//         final String lastName = extractedData['last_name'] ?? 'N/A';
+//         final String address = extractedData['address'] ?? 'N/A';
+//         final String licenseNumber = extractedData['license_number'] ?? 'N/A';
+//         final String cardNumber = extractedData['card_number'] ?? 'N/A';
+//         final String dateOfBirth = extractedData['date_of_birth'] ?? 'N/A';
+//         final String expiryDate = extractedData['expiry_date'] ?? 'N/A';
+//
+//         // Autofill form fields
+//         setState(() {
+//           firstNameController.text = firstName;
+//           lastNameController.text = lastName;
+//           addressController.text = address;
+//           licenseNumberController.text = licenseNumber;
+//           cardNumberController.text = cardNumber;
+//           dateOfBirthController.text = dateOfBirth;
+//           expiryDateController.text = expiryDate;
+//         });
+//
+//         // Show dialog with results
+//         _showApiResultDialog();
+//       } else {
+//         _showErrorDialog("Failed to process the driver's license. Status: ${response.statusCode}");
+//       }
+//     } catch (e) {
+//       print('Error sending photo to API: $e');
+//       _showErrorDialog("An unexpected error occurred while processing the driver's license.");
+//     }
+//   }
+//
+//   void _showApiResultDialog() {
+//     showDialog(
+//       context: context,
+//       builder: (context) => AlertDialog(
+//         title: const Text("Driver's License OCR Result"),
+//         content: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           mainAxisSize: MainAxisSize.min,
+//           children: [
+//             Text("First Name: ${firstNameController.text}"),
+//             Text("Last Name: ${lastNameController.text}"),
+//             Text("Address: ${addressController.text}"),
+//             Text("License Number: ${licenseNumberController.text}"),
+//             Text("Card Number: ${cardNumberController.text}"),
+//             Text("Date of Birth: ${dateOfBirthController.text}"),
+//             Text("Expiry Date: ${expiryDateController.text}"),
+//           ],
+//         ),
+//         actions: [
+//           TextButton(
+//             onPressed: () => Navigator.of(context).pop(),
+//             child: const Text("OK"),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+//
+//   // Method to show an error dialog
+//   void _showErrorDialog(String message) {
+//     showDialog(
+//       context: context,
+//       builder: (context) => AlertDialog(
+//         title: const Text("Error"),
+//         content: Text(message),
+//         actions: [
+//           TextButton(
+//             onPressed: () => Navigator.of(context).pop(),
+//             child: const Text("OK"),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: const Text(
+//           'Collector Registration',
+//           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+//         ),
+//         backgroundColor: const Color(0xFF01B4D2),
+//       ),
+//       body: SingleChildScrollView(
+//         child: Padding(
+//           padding: const EdgeInsets.all(16.0),
+//           child: Form(
+//             key: _formKey,
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 DropdownButtonFormField<String>(
+//                   decoration: const InputDecoration(
+//                     labelText: 'Photo ID Type',
+//                     border: OutlineInputBorder(),
+//                   ),
+//                   value: selectedPhotoIDType,
+//                   items: const [
+//                     DropdownMenuItem(value: 'Passport', child: Text('Passport')),
+//                     DropdownMenuItem(value: 'Driver\'s License', child: Text('Driver\'s License')),
+//                     DropdownMenuItem(value: 'National ID', child: Text('National ID')),
+//                   ],
+//                   onChanged: (value) {
+//                     setState(() {
+//                       selectedPhotoIDType = value;
+//                     });
+//                   },
+//                 ),
+//                 const SizedBox(height: 16),
+//                 GestureDetector(
+//                   onTap: _getPhotoFromGallery,
+//                   child: Container(
+//                     height: 200,
+//                     width: double.infinity,
+//                     decoration: BoxDecoration(
+//                       border: Border.all(color: Colors.grey),
+//                       borderRadius: BorderRadius.circular(8),
+//                     ),
+//                     child: _uploadedPhoto == null
+//                         ? const Center(
+//                       child: Text("Upload or take a photo of your ID"),
+//                     )
+//                         : Image.file(
+//                       _uploadedPhoto!,
+//                       fit: BoxFit.cover,
+//                     ),
+//                   ),
+//                 ),
+//                 const SizedBox(height: 16),
+//                 TextFormField(
+//                   controller: firstNameController,
+//                   decoration: const InputDecoration(
+//                     labelText: 'First Name',
+//                     border: OutlineInputBorder(),
+//                   ),
+//                 ),
+//                 const SizedBox(height: 16),
+//                 TextFormField(
+//                   controller: lastNameController,
+//                   decoration: const InputDecoration(
+//                     labelText: 'Last Name',
+//                     border: OutlineInputBorder(),
+//                   ),
+//                 ),
+//                 const SizedBox(height: 16),
+//                 TextFormField(
+//                   controller: addressController,
+//                   decoration: const InputDecoration(
+//                     labelText: 'Address',
+//                     border: OutlineInputBorder(),
+//                   ),
+//                 ),
+//                 const SizedBox(height: 16),
+//                 TextFormField(
+//                   controller: licenseNumberController,
+//                   decoration: const InputDecoration(
+//                     labelText: 'License Number',
+//                     border: OutlineInputBorder(),
+//                   ),
+//                 ),
+//                 const SizedBox(height: 16),
+//                 TextFormField(
+//                   controller: cardNumberController,
+//                   decoration: const InputDecoration(
+//                     labelText: 'Card Number',
+//                     border: OutlineInputBorder(),
+//                   ),
+//                 ),
+//                 const SizedBox(height: 16),
+//                 TextFormField(
+//                   controller: dateOfBirthController,
+//                   decoration: const InputDecoration(
+//                     labelText: 'Date of Birth',
+//                     border: OutlineInputBorder(),
+//                   ),
+//                 ),
+//                 const SizedBox(height: 16),
+//                 TextFormField(
+//                   controller: expiryDateController,
+//                   decoration: const InputDecoration(
+//                     labelText: 'Expiry Date',
+//                     border: OutlineInputBorder(),
+//                   ),
+//                 ),
+//                 const SizedBox(height: 32),
+//                 ElevatedButton(
+//                   onPressed: () {
+//                     if (_formKey.currentState!.validate()) {
+//                       print("Form Submitted");
+//                     }
+//                   },
+//                   child: const Text("Submit"),
+//                 ),
+//               ],
+//             ),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
+//

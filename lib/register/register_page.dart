@@ -1,8 +1,9 @@
-import 'dart:convert'; // To encode and decode JSON data
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:email_validator/email_validator.dart'; // For email validation
+import 'package:email_validator/email_validator.dart';
+import 'package:http/http.dart' as http;
 
 import '../gen/assets.gen.dart';
 
@@ -17,48 +18,46 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _email = TextEditingController();
   final TextEditingController _password = TextEditingController();
   final TextEditingController _confirmPassword = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+  final _formkey = GlobalKey<FormState>();
 
   bool _obscuredPassword = true;
   bool _obscuredConfirmPassword = true;
 
   void _toggleObscuredPassword() {
     setState(() {
-      _obscuredPassword = !_obscuredPassword; // Toggle password visibility state
+      _obscuredPassword = !_obscuredPassword;
     });
   }
 
   void _toggleObscuredConfirmPassword() {
     setState(() {
-      _obscuredConfirmPassword = !_obscuredConfirmPassword; // Toggle confirm password visibility
+      _obscuredConfirmPassword = !_obscuredConfirmPassword;
     });
   }
 
   Future<void> _signup() async {
-    if (_formKey.currentState?.validate() != true) {
-      return; // Stop the function if the form is invalid
+    if (_formkey.currentState?.validate() != true) {
+      return;
     }
 
     final String email = _email.text.trim();
     final String password = _password.text.trim();
 
-    // Simulate API call
     try {
-      // Uncomment this section when API integration is ready
-      /*
+      // API call using http
       final http.Response response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/signup'), // API endpoint for user registration
-        headers: {'Content-Type': 'application/json'}, // Specify JSON content type
-        body: jsonEncode({'email': email, 'password': password}), // Send email and password as JSON
+        Uri.parse('http://34.55.218.37:9090/signup'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body); // Parse the response body
+        final data = jsonDecode(response.body);
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text("Success!"),
-            content: Text(data['message'] ?? 'Sign Up Successful!'), // Display success message
+            content: Text(data['message'] ?? 'Sign Up Successful!'),
           ),
         );
         Future.delayed(const Duration(seconds: 1), () {
@@ -66,36 +65,21 @@ class _RegisterPageState extends State<RegisterPage> {
           Navigator.of(context).pop(); // Return to the previous screen
         });
       } else {
-        final data = jsonDecode(response.body); // Parse the error response body
+        final data = jsonDecode(response.body);
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text("Error!"),
-            content: Text(data['error'] ?? 'Sign Up Failed!'), // Display error message
+            content: Text(data['error'] ?? 'Sign Up Failed!'),
           ),
         );
       }
-      */
-
-      // Simulated success
-      showDialog(
-        context: context,
-        builder: (context) => const AlertDialog(
-          title: Text("Success!"),
-          content: Text("Sign Up Successful!"), // Display simulated success message
-        ),
-      );
-      Future.delayed(const Duration(seconds: 1), () {
-        Navigator.of(context).pop(); // Close success dialog
-        Navigator.of(context).pop(); // Navigate back
-      });
     } catch (e) {
-      // Handle errors
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: const Text("Error!"),
-          content: const Text("Failed to connect to the server. Please try again."), // Display connection error
+          content: const Text("Failed to connect to the server. Please try again."),
         ),
       );
     }
@@ -109,13 +93,13 @@ class _RegisterPageState extends State<RegisterPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () {
-            Navigator.of(context).pop(); // Navigate back to the previous screen
+            Navigator.of(context).pop();
           },
         ),
       ),
       body: SingleChildScrollView(
         child: Form(
-          key: _formKey, // Attach the form key to enable validation
+          key: _formkey,
           child: Container(
             width: MediaQuery.of(context).size.width,
             height: MediaQuery.of(context).size.height,
@@ -173,9 +157,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             validator: (text) {
                               if (text?.isNotEmpty == true &&
                                   EmailValidator.validate(text!)) {
-                                return null; // Return null if valid
+                                return null;
                               } else {
-                                return 'Invalid Email!'; // Return error message
+                                return 'Invalid Email!';
                               }
                             },
                           ),
@@ -269,7 +253,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           const Gap(7),
                           ElevatedButton(
-                            onPressed: _signup, // Call the signup function (now commented API logic)
+                            onPressed: _signup,
                             style: ElevatedButton.styleFrom(
                               textStyle: const TextStyle(fontSize: 20),
                               backgroundColor: const Color(0xFF1A1448),

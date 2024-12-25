@@ -6,8 +6,8 @@ class CustomTextField extends StatelessWidget {
   const CustomTextField({
     required this.label,
     this.controller, // Add the controller to the constructor
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sample_assist/collect_registration/camera_with_frame.dart';
+import 'package:sample_assist/collect_registration/services/opencv_service.dart';
 import 'widgets/step_indicator.dart';
 import 'widgets/section_title.dart';
 import 'widgets/photo_id_section.dart';
@@ -26,24 +27,27 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
   String? selectedPhotoIDType;
   final ImagePicker _imagePicker = ImagePicker();
   File? _uploadedPhoto;
-
+  bool isLoading = false;
   // Method to get a photo from the gallery
-  void _getPhotoFromGallery() async {
+  Future<void> _getPhotoFromGallery() async {
     try {
       final XFile? pickedFile =
           await _imagePicker.pickImage(source: ImageSource.gallery);
       if (pickedFile != null) {
-        setState(() {
-          _uploadedPhoto = File(pickedFile.path);
-        });
+        _uploadedPhoto = File(pickedFile.path);
+
+        setState(() {});
+      }
+      if (selectedPhotoIDType == "Driver's License") {
+        await _sendPhotoToApi(_uploadedPhoto!);
       }
     } catch (e) {
       print('Error selecting photo: $e');
     }
   }
 
-  // Method to take a photo using the camera
-  void _takePhoto() async {
+  //Method to take a photo using the camera
+  Future<void> _takePhoto() async {
     final cameras = await availableCameras();
     CameraController controller =
         CameraController(cameras.first, ResolutionPreset.high);
@@ -64,6 +68,9 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
         setState(() {
           _uploadedPhoto = File(pickedFile.path);
         });
+        if (selectedPhotoIDType == "Driver's License") {
+          await _sendPhotoToApi(_uploadedPhoto!);
+        }
       }
     } catch (e) {
       if (kDebugMode) {
@@ -98,6 +105,56 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _sendPhotoToApi(File photo) async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      // Process the image locally with OpenCV
+      final processedPhotoPath = await OpenCVService.processImage(photo.path);
+
+      // Send the processed photo to the API
+      const String apiUrl = "http://34.55.218.37:9090/process_driver_license/";
+      final request = http.MultipartRequest('POST', Uri.parse(apiUrl));
+      request.files
+          .add(await http.MultipartFile.fromPath('file', processedPhotoPath));
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(responseBody);
+        // _populateFormFields(data['extracted_data']);
+      } else {
+        _showErrorDialog(
+            "Failed to process image. Status: ${response.statusCode}");
+      }
+    } catch (e) {
+      _showErrorDialog("An error occurred: $e");
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Error"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("OK"),
+          ),
+        ],
+      ),
     );
   }
 

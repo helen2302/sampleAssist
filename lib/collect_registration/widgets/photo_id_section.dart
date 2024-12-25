@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:sample_assist/collect_registration/camera_with_frame.dart';
 
 class PhotoIdSection extends StatelessWidget {
   final File? uploadedPhoto; // Photo file passed to this widget

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sample_assist/collect_registration/camera_with_frame.dart';
+import 'package:sample_assist/collect_registration/processing_page.dart';
 import 'package:sample_assist/collect_registration/services/opencv_service.dart';
 import 'widgets/step_indicator.dart';
 import 'widgets/section_title.dart';
@@ -192,7 +193,16 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SectionHeader(title: 'PHOTO ID'),
+                    InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProcessingPage(),
+                            ),
+                          );
+                        },
+                        child: const SectionHeader(title: 'PHOTO ID')),
                     const SizedBox(height: 16),
                     DropdownField(
                       hint: 'Please select a type of Photo ID',

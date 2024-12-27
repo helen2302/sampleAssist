@@ -32,8 +32,8 @@ class _CameraWithFrameState extends State<CameraWithFrame> {
     }
 
     // Tính toán kích thước khuôn cắt với tỷ lệ 0.63
-    final cropWidth = originalImage.width;
-    final cropHeight = (cropWidth * 0.63).toInt();
+    final cropWidth = originalImage.width - 40;
+    final cropHeight = (cropWidth * 0.63).toInt() - 20;
 
     // Cắt ảnh từ phần trên cùng, đảm bảo không bị dư phía trên hay dưới
     final cropX = 0; // Cắt từ vị trí đầu tiên của ảnh
@@ -43,7 +43,7 @@ class _CameraWithFrameState extends State<CameraWithFrame> {
     // Cắt ảnh theo khuôn
     final croppedImage = img.copyCrop(
       originalImage,
-      x: cropX,
+      x: cropX + 20,
       y: cropY,
       width: cropWidth,
       height: cropHeight,

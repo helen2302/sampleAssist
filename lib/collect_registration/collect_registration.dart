@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:sample_assist/collect_registration/camera_with_frame.dart';
 import 'package:sample_assist/collect_registration/processing_page.dart';
 import 'package:sample_assist/collect_registration/services/opencv_service.dart';
+import 'package:sample_assist/utils/consts.dart';
 import 'widgets/step_indicator.dart';
 import 'widgets/section_title.dart';
 import 'widgets/photo_id_section.dart';
@@ -40,7 +41,7 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
         setState(() {});
       }
       if (selectedPhotoIDType == "Driver's License") {
-        await _sendPhotoToApi(_uploadedPhoto!);
+        await uploadFile(_uploadedPhoto!.path);
       }
     } catch (e) {
       print('Error selecting photo: $e');
@@ -70,7 +71,7 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
           _uploadedPhoto = File(pickedFile.path);
         });
         if (selectedPhotoIDType == "Driver's License") {
-          await _sendPhotoToApi(_uploadedPhoto!);
+          await uploadFile(_uploadedPhoto!.path);
         }
       }
     } catch (e) {
@@ -109,37 +110,48 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
     );
   }
 
-  Future<void> _sendPhotoToApi(File photo) async {
-    setState(() {
-      isLoading = true;
-    });
+  Future<void> uploadFile(String filePath) async {
+    final url = Uri.parse('http://34.44.73.114:9090/process_driver_license');
 
     try {
-      // Process the image locally with OpenCV
-      final processedPhotoPath = await OpenCVService.processImage(photo.path);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const ProcessingPage(),
+        ),
+      );
 
-      // Send the processed photo to the API
-      const String apiUrl = "http://34.55.218.37:9090/process_driver_license/";
-      final request = http.MultipartRequest('POST', Uri.parse(apiUrl));
-      request.files
-          .add(await http.MultipartFile.fromPath('file', processedPhotoPath));
+      await Future.delayed(const Duration(seconds: 2));
+      // Tạo file từ đường dẫn
+      var file = File(filePath);
 
-      final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
+      // Kiểm tra file có tồn tại không
+      if (!await file.exists()) {
+        print('File không tồn tại.');
+        return;
+      }
 
+      // Tạo yêu cầu multipart
+      var request = http.MultipartRequest('POST', url)
+        ..headers['Accept'] = 'application/json'
+        ..headers['Content-Type'] = 'multipart/form-data'
+        ..files.add(await http.MultipartFile.fromPath('file', file.path));
+
+      // Gửi yêu cầu
+      var response = await request.send();
+
+      // Đọc phần hồi
+      Navigator.pop(context);
+
+      // Kiểm tra phản hồi
       if (response.statusCode == 200) {
-        final data = jsonDecode(responseBody);
-        // _populateFormFields(data['extracted_data']);
+        var responseBody = await response.stream.bytesToString();
+        print('Tải lên thành công: $responseBody');
       } else {
-        _showErrorDialog(
-            "Failed to process image. Status: ${response.statusCode}");
+        print('Lỗi khi tải lên: ${response.statusCode}');
       }
     } catch (e) {
-      _showErrorDialog("An error occurred: $e");
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
+      print('Đã xảy ra lỗi: $e');
     }
   }
 

@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sample_assist/collect_registration/camera_with_frame.dart';
 import 'package:sample_assist/collect_registration/processing_page.dart';
-import 'package:sample_assist/collect_registration/services/opencv_service.dart';
-import 'package:sample_assist/utils/consts.dart';
 import 'widgets/step_indicator.dart';
 import 'widgets/section_title.dart';
 import 'widgets/photo_id_section.dart';
@@ -30,6 +28,9 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
   final ImagePicker _imagePicker = ImagePicker();
   File? _uploadedPhoto;
   bool isLoading = false;
+  final firstNameController = TextEditingController();
+  final lastNameController = TextEditingController();
+  final addressController = TextEditingController();
   // Method to get a photo from the gallery
   Future<void> _getPhotoFromGallery() async {
     try {
@@ -67,13 +68,15 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
         ),
       );
       if (pickedFile != null) {
-        setState(() {
-          _uploadedPhoto = File(pickedFile.path);
-        });
+        _uploadedPhoto = File(pickedFile.path);
+
         if (selectedPhotoIDType == "Driver's License") {
           await uploadFile(_uploadedPhoto!.path);
         }
       }
+      setState(() {
+        
+      });
     } catch (e) {
       if (kDebugMode) {
         print('Error capturing photo: $e');
@@ -145,7 +148,11 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
       // Kiểm tra phản hồi
       if (response.statusCode == 200) {
         var responseBody = await response.stream.bytesToString();
-        print('Tải lên thành công: $responseBody');
+        final data = jsonDecode(responseBody)['extracted_data'];
+        firstNameController.text = data['first_name'];
+        lastNameController.text = data['last_name'];
+        addressController.text = data['address'];
+        setState(() {});
       } else {
         print('Lỗi khi tải lên: ${response.statusCode}');
       }
@@ -204,16 +211,7 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    InkWell(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ProcessingPage(),
-                            ),
-                          );
-                        },
-                        child: const SectionHeader(title: 'PHOTO ID')),
+                    const SectionHeader(title: 'PHOTO ID'),
                     const SizedBox(height: 16),
                     DropdownField(
                       hint: 'Please select a type of Photo ID',
@@ -242,8 +240,14 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
                     const CustomTextField(label: 'Card Number'),
                     const SizedBox(height: 16),
                     const SectionHeader(title: 'PERSONAL DETAILS'),
-                    const CustomTextField(label: 'First Name'),
-                    const CustomTextField(label: 'Last Name'),
+                    CustomTextField(
+                      label: 'First Name',
+                      controller: firstNameController,
+                    ),
+                    CustomTextField(
+                      label: 'Last Name',
+                      controller: lastNameController,
+                    ),
                     const CustomTextField(label: 'Sex'),
                     const CustomTextField(label: 'Date of Birth'),
                     const SizedBox(height: 16),
@@ -252,7 +256,10 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
                     const CustomTextField(label: 'Phone Number (Optional)'),
                     const SizedBox(height: 16),
                     const SectionHeader(title: 'ADDRESS'),
-                    const CustomTextField(label: 'Address'),
+                    CustomTextField(
+                      label: 'Address',
+                      controller: addressController,
+                    ),
                     const SizedBox(height: 16),
                     ActionButtons(
                       formKey: _formKey,

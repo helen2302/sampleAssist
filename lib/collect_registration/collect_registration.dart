@@ -111,7 +111,7 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
   }
 
   Future<void> uploadFile(String filePath) async {
-    final url = Uri.parse('http://34.44.73.114:9090/process_driver_license');
+    final url = Uri.parse('http://34.44.73.114:9090/process_driver_license/');
 
     try {
       Navigator.push(
@@ -134,7 +134,6 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
       // Tạo yêu cầu multipart
       var request = http.MultipartRequest('POST', url)
         ..headers['Accept'] = 'application/json'
-        ..headers['Content-Type'] = 'multipart/form-data'
         ..files.add(await http.MultipartFile.fromPath('file', file.path));
 
       // Gửi yêu cầu

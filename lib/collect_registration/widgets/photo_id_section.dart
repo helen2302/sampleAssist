@@ -108,6 +108,22 @@ class PhotoIdSection extends StatelessWidget {
             ),
             const Divider(height: 1),
             ListTile(
+              leading: const Icon(
+                Icons.adf_scanner,
+                color: Color(0xFF156CC9),
+              ),
+              title: const Text(
+                'Scan',
+                style: TextStyle(fontSize: 16, color: Color(0xFF156CC9)),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+
+                takePhoto(); // Take a new photo
+              },
+            ),
+            const Divider(height: 1),
+            ListTile(
               leading: const Icon(Icons.upload, color: Color(0xFF156CC9)),
               title: const Text(
                 'Upload',

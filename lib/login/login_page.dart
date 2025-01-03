@@ -316,7 +316,7 @@ class _LoginPageState extends State<LoginPage> {
             if (!mounted) return;
             Navigator.of(context).pop(); // Dismiss the dialog
             Navigator.of(context).pushReplacement(MaterialPageRoute(
-              builder: (context) => const CollectRegistration(),
+              builder: (context) =>  CollectRegistration(email: _email.text,),
             ));
           });
         } else {

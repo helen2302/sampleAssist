@@ -7,6 +7,7 @@ class PhotoIdSection extends StatelessWidget {
   final VoidCallback takePhoto; // Callback to take photo
   final VoidCallback watchPhoto;
   final VoidCallback deletePhoto; // Callback to view the full photo
+  final bool isCheck;
 
   const PhotoIdSection({
     required this.uploadedPhoto,
@@ -14,13 +15,16 @@ class PhotoIdSection extends StatelessWidget {
     required this.takePhoto,
     required this.watchPhoto,
     required this.deletePhoto,
+    required this.isCheck,
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _showPhotoIdOptions(context), // Show options when tapped
+      onTap: () {
+        if (isCheck) _showPhotoIdOptions(context);
+      }, // Show options when tapped
       child: Container(
         height: 300,
         width: MediaQuery.of(context).size.width,
@@ -98,7 +102,7 @@ class PhotoIdSection extends StatelessWidget {
               ),
               onTap: () {
                 Navigator.pop(context);
-                
+
                 takePhoto(); // Take a new photo
               },
             ),

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sample_assist/collect_registration/camera_with_frame.dart';
 import 'package:sample_assist/collect_registration/processing_page.dart';
+import 'package:sample_assist/utils/consts.dart';
 import 'widgets/step_indicator.dart';
 import 'widgets/section_title.dart';
 import 'widgets/photo_id_section.dart';
@@ -16,7 +17,8 @@ import 'widgets/section_header.dart';
 import 'package:http/http.dart' as http;
 
 class CollectRegistration extends StatefulWidget {
-  const CollectRegistration({super.key});
+  const CollectRegistration({super.key, required this.email});
+  final String email;
 
   @override
   State<CollectRegistration> createState() => _CollectRegistrationScreenState();
@@ -28,9 +30,18 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
   final ImagePicker _imagePicker = ImagePicker();
   File? _uploadedPhoto;
   bool isLoading = false;
+
+  final idController = TextEditingController();
+  final nationalController = TextEditingController();
+  final expiryController = TextEditingController();
+  final cardNumberController = TextEditingController();
   final firstNameController = TextEditingController();
   final lastNameController = TextEditingController();
   final addressController = TextEditingController();
+  final sexController = TextEditingController();
+  final dobController = TextEditingController();
+  final mobileNumberController = TextEditingController();
+  final phoneNumberController = TextEditingController();
   // Method to get a photo from the gallery
   Future<void> _getPhotoFromGallery() async {
     try {
@@ -41,9 +52,7 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
 
         setState(() {});
       }
-      if (selectedPhotoIDType == "Driver's License") {
-        await uploadFile(_uploadedPhoto!.path);
-      }
+      await uploadFileDriver(_uploadedPhoto!.path, getPathProcess());
     } catch (e) {
       print('Error selecting photo: $e');
     }
@@ -70,18 +79,74 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
       if (pickedFile != null) {
         _uploadedPhoto = File(pickedFile.path);
 
-        if (selectedPhotoIDType == "Driver's License") {
-          await uploadFile(_uploadedPhoto!.path);
-        }
+        await uploadFileDriver(_uploadedPhoto!.path, getPathProcess());
       }
-      setState(() {
-        
-      });
+      setState(() {});
     } catch (e) {
       if (kDebugMode) {
         print('Error capturing photo: $e');
       }
     }
+  }
+
+  String getPathProcess() {
+    if (selectedPhotoIDType == "Driver's License") {
+      return pathProcessDriverLicense;
+    } else if (selectedPhotoIDType == "Passport") {
+      return pathProcessPassport;
+    } else if (selectedPhotoIDType == "National ID") {
+      return pathProcessPhotoCard;
+    }
+    return '';
+  }
+
+  String getPathStorege() {
+    if (selectedPhotoIDType == "Driver's License") {
+      return pathStoreDriverLicense;
+    } else if (selectedPhotoIDType == "Passport") {
+      return pathStorePassport;
+    } else if (selectedPhotoIDType == "National ID") {
+      return pathStorePhotoCard;
+    }
+    return '';
+  }
+
+  Map<String, dynamic> getBody() {
+    if (selectedPhotoIDType == "Driver's License") {
+      return {
+        "email": widget.email,
+        "first_name": firstNameController.text,
+        "last_name": lastNameController.text,
+        "address": addressController.text,
+        "license_number": idController.text,
+        "card_number": cardNumberController.text,
+        "date_of_birth": dobController.text,
+        "expiry_date": expiryController.text,
+      };
+    } else if (selectedPhotoIDType == "Passport") {
+      return {
+        "email": widget.email,
+        "first_name": firstNameController.text,
+        "last_name": lastNameController.text,
+        "date_of_birth": dobController.text,
+        "document_number": idController.text,
+        "expiry_date": expiryController.text,
+        "gender": sexController.text,
+      };
+    } else if (selectedPhotoIDType == "National ID") {
+      return {
+        "email": widget.email,
+        "first_name": firstNameController.text,
+        "last_name": lastNameController.text,
+        "address": addressController.text,
+        "photo_card_number": idController.text,
+        "date_of_birth": dobController.text,
+        "card_number": cardNumberController.text,
+        "gender": sexController.text,
+        "expiry_date": expiryController.text,
+      };
+    }
+    return <String, dynamic>{};
   }
 
   // Method to show the full photo in a dialog
@@ -113,8 +178,8 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
     );
   }
 
-  Future<void> uploadFile(String filePath) async {
-    final url = Uri.parse('http://34.44.73.114:9090/process_driver_license/');
+  Future<void> uploadFileDriver(String filePath, String urlApi) async {
+    final url = Uri.parse('$baseUri$urlApi');
 
     try {
       Navigator.push(
@@ -148,10 +213,16 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
       // Kiểm tra phản hồi
       if (response.statusCode == 200) {
         var responseBody = await response.stream.bytesToString();
-        final data = jsonDecode(responseBody)['extracted_data'];
-        firstNameController.text = data['first_name'];
-        lastNameController.text = data['last_name'];
-        addressController.text = data['address'];
+        final data = jsonDecode(responseBody)['extracted_data'] ?? '';
+        firstNameController.text = data['first_name'] ?? '';
+        lastNameController.text = data['last_name'] ?? '';
+        addressController.text = data['address'] ?? '';
+        cardNumberController.text = data['card_number'] ?? '';
+        dobController.text = data['date_of_birth'] ?? '';
+        expiryController.text = data['expiry_date'] ?? '';
+        sexController.text = data['gender'] ?? '';
+        idController.text = data['photo_card_number'] ?? data['license_number'];
+
         setState(() {});
       } else {
         print('Lỗi khi tải lên: ${response.statusCode}');
@@ -233,13 +304,26 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
                       watchPhoto: _showFullPhotoDialog,
                       deletePhoto:
                           _deletePhoto, // Provide the watch photo callback
+                      isCheck: selectedPhotoIDType != null,
                     ),
-                    const CustomTextField(label: 'Photo ID Document Number'),
-                    const CustomTextField(label: 'Nationality'),
-                    const CustomTextField(label: 'Expiry Date'),
-                    const CustomTextField(label: 'Card Number'),
-                    const SizedBox(height: 16),
-                    const SectionHeader(title: 'PERSONAL DETAILS'),
+                    CustomTextField(
+                      label: 'Photo ID Document Number',
+                      controller: idController,
+                    ),
+                    CustomTextField(
+                      label: 'Nationality',
+                      controller: nationalController,
+                    ),
+                    CustomTextField(
+                      label: 'Expiry Date',
+                      controller: expiryController,
+                    ),
+                    CustomTextField(
+                      label: 'Card Number',
+                      controller: cardNumberController,
+                    ),
+                    SizedBox(height: 16),
+                    SectionHeader(title: 'PERSONAL DETAILS'),
                     CustomTextField(
                       label: 'First Name',
                       controller: firstNameController,
@@ -248,14 +332,26 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
                       label: 'Last Name',
                       controller: lastNameController,
                     ),
-                    const CustomTextField(label: 'Sex'),
-                    const CustomTextField(label: 'Date of Birth'),
+                    CustomTextField(
+                      label: 'Sex',
+                      controller: sexController,
+                    ),
+                    CustomTextField(
+                      label: 'Date of Birth',
+                      controller: dobController,
+                    ),
                     const SizedBox(height: 16),
-                    const SectionHeader(title: 'CONTACT INFORMATION'),
-                    const CustomTextField(label: 'Mobile Number'),
-                    const CustomTextField(label: 'Phone Number (Optional)'),
+                    SectionHeader(title: 'CONTACT INFORMATION'),
+                    CustomTextField(
+                      label: 'Mobile Number',
+                      controller: mobileNumberController,
+                    ),
+                    CustomTextField(
+                      label: 'Phone Number (Optional)',
+                      controller: phoneNumberController,
+                    ),
                     const SizedBox(height: 16),
-                    const SectionHeader(title: 'ADDRESS'),
+                    SectionHeader(title: 'ADDRESS'),
                     CustomTextField(
                       label: 'Address',
                       controller: addressController,
@@ -263,12 +359,8 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
                     const SizedBox(height: 16),
                     ActionButtons(
                       formKey: _formKey,
-                      onConfirm: () {
-                        if (_formKey.currentState!.validate()) {
-                          // Perform confirm action
-                          print("Form submitted successfully");
-                        }
-                      },
+                      path: getPathStorege(),
+                      body: getBody(),
                     ),
                   ],
                 ),

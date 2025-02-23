@@ -24,7 +24,7 @@ class ActionButtons extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF01B4D2),
             shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
           onPressed: () {},
@@ -38,7 +38,7 @@ class ActionButtons extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF1A1448),
             shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
           onPressed: () {

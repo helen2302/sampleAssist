@@ -269,12 +269,12 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _email = TextEditingController(text: 'my@gmail.com');
-  final TextEditingController _password = TextEditingController(text: '12345678');
+  final TextEditingController _email = TextEditingController();
+  final TextEditingController _password = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   final FlutterSecureStorage _storage =
-      const FlutterSecureStorage(); // Secure storage instance
+  const FlutterSecureStorage(); // Secure storage instance
 
   bool _isPasswordVisible = false;
 
@@ -404,7 +404,7 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             decoration: const InputDecoration(
                               prefixIcon:
-                                  Icon(Icons.email, color: Color(0xFF1A1448)),
+                              Icon(Icons.email, color: Color(0xFF1A1448)),
                               labelText: 'Email',
                               labelStyle: TextStyle(
                                 color: Color(0xFF1A1448),
@@ -542,12 +542,12 @@ class _LoginPageState extends State<LoginPage> {
                                 onPressed: () {
                                   Navigator.of(context).push(MaterialPageRoute(
                                       builder: (context) =>
-                                          const RegisterPage()));
+                                      const RegisterPage()));
                                 },
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero,
                                   tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
+                                  MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: const Text(
                                   "Register",

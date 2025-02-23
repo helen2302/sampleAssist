@@ -37,37 +37,37 @@ class PhotoIdSection extends StatelessWidget {
         ),
         child: uploadedPhoto != null
             ? ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.file(
-                  uploadedPhoto!,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                ),
-              )
+          borderRadius: BorderRadius.circular(8),
+          child: Image.file(
+            uploadedPhoto!,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
+        )
             : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Please upload your current Photo ID',
-                    style: TextStyle(fontSize: 18, color: Color(0xFF156CC9)),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    height: 70,
-                    width: 70,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF156CC9),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      size: 30,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Please upload your current Photo ID',
+              style: TextStyle(fontSize: 18, color: Color(0xFF156CC9)),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              height: 70,
+              width: 70,
+              decoration: const BoxDecoration(
+                color: Color(0xFF156CC9),
+                shape: BoxShape.circle,
               ),
+              child: const Icon(
+                Icons.camera_alt,
+                size: 30,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

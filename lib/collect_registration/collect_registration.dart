@@ -66,6 +66,15 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
     if (pickedFile != null) {
       CroppedFile? croppedFile = await ImageCropper().cropImage(
         sourcePath: pickedFile.path,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Cắt ảnh',
+            lockAspectRatio: false, // Giữ nguyên tỷ lệ đã đặt
+          ),
+          IOSUiSettings(
+            aspectRatioLockEnabled: false, // Khóa tỷ lệ
+          ),
+        ],
       );
 
       if (croppedFile != null) {

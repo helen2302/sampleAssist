@@ -1,17 +1,11 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:sample_assist/utils/consts.dart';
 
 class ActionButtons extends StatelessWidget {
   final GlobalKey<FormState> formKey;
-  final Map<String, dynamic> body;
-  final String path;
+  final Future<void> Function() onTap;
   const ActionButtons({
     required this.formKey,
-    required this.body,
-    required this.path,
+    required this.onTap,
     super.key,
   });
 
@@ -43,7 +37,7 @@ class ActionButtons extends StatelessWidget {
           ),
           onPressed: () {
             if (formKey.currentState!.validate()) {
-              storeDriverLicense(context, path, body);
+              onTap();
             }
           },
           child: const Text(
@@ -57,48 +51,5 @@ class ActionButtons extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  Future<void> storeDriverLicense(
-      BuildContext context, String path, Map<String, dynamic> body) async {
-    String url = '$baseUri$path';
-    const Map<String, String> headers = {
-      'accept': 'application/json',
-      'Content-Type': 'application/json',
-    };
-
-    try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: headers,
-        body: jsonEncode(body),
-      );
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        showDialog(
-          context: context,
-          builder: (context) => const AlertDialog(
-            title: Text("Success!"),
-            content: Text("Your data has been saved successfully!"),
-          ),
-        );
-      } else {
-        showDialog(
-          context: context,
-          builder: (context) => const AlertDialog(
-            title: Text("Fail!"),
-            content: Text("Your data has been saved fail!"),
-          ),
-        );
-      }
-    } catch (e) {
-      showDialog(
-        context: context,
-        builder: (context) => const AlertDialog(
-          title: Text("Fail!"),
-          content: Text("Your data has been saved fail!"),
-        ),
-      );
-    }
   }
 }

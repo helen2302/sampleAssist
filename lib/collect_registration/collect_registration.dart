@@ -403,6 +403,7 @@ class _CollectRegistrationScreenState extends State<CollectRegistration> {
                     CustomTextField(
                       label: 'Phone Number (Optional)',
                       controller: phoneNumberController,
+                      isValidate: false,
                     ),
                     const SizedBox(height: 16),
                     if (selectedPhotoIDType == "Driver's License" ||
